@@ -14,6 +14,8 @@ import logging
 import json
 import pathlib
 import re
+import base64
+from functools import wraps
 from watchfiles import DefaultFilter, Change, awatch
 
 from ytdl import DownloadQueueNotifier, DownloadQueue
@@ -54,9 +56,13 @@ class Config:
         'MAX_CONCURRENT_DOWNLOADS': 3,
         'LOGLEVEL': 'INFO',
         'ENABLE_ACCESSLOG': 'false',
+        'ENABLE_HTTP_AUTH': 'false',
+        'HTTP_AUTH_USERNAME': '',
+        'HTTP_AUTH_PASSWORD': '',
+        'HTTP_AUTH_REALM': 'MeTube Restricted Area',
     }
 
-    _BOOLEAN = ('DOWNLOAD_DIRS_INDEXABLE', 'CUSTOM_DIRS', 'CREATE_CUSTOM_DIRS', 'DELETE_FILE_ON_TRASHCAN', 'DEFAULT_OPTION_PLAYLIST_STRICT_MODE', 'HTTPS', 'ENABLE_ACCESSLOG')
+    _BOOLEAN = ('DOWNLOAD_DIRS_INDEXABLE', 'CUSTOM_DIRS', 'CREATE_CUSTOM_DIRS', 'DELETE_FILE_ON_TRASHCAN', 'DEFAULT_OPTION_PLAYLIST_STRICT_MODE', 'HTTPS', 'ENABLE_ACCESSLOG', 'ENABLE_HTTP_AUTH')
 
     def __init__(self):
         for k, v in self._DEFAULTS.items():
@@ -111,7 +117,97 @@ class Config:
         self.YTDL_OPTIONS.update(opts)
         return (True, '')
 
+        # Validate HTTP authentication configuration
+        if self.ENABLE_HTTP_AUTH and (not self.HTTP_AUTH_USERNAME or not self.HTTP_AUTH_PASSWORD):
+            log.error('ENABLE_HTTP_AUTH is true but HTTP_AUTH_USERNAME or HTTP_AUTH_PASSWORD is not set')
+            sys.exit(1)
+
 config = Config()
+
+# HTTP Basic Authentication middleware
+def basic_auth_middleware():
+    """Create a middleware for HTTP Basic Authentication"""
+
+    @web.middleware
+    async def auth_middleware(request, handler):
+        # Skip authentication if HTTP auth is disabled
+        if not config.ENABLE_HTTP_AUTH:
+            return await handler(request)
+
+        # Check for Authorization header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Basic '):
+            return web.Response(
+                text='Authentication required',
+                status=401,
+                headers={'WWW-Authenticate': f'Basic realm="{config.HTTP_AUTH_REALM}"'}
+            )
+
+        try:
+            # Decode the credentials
+            auth_decoded = base64.b64decode(auth_header[6:]).decode('utf-8')
+            username, password = auth_decoded.split(':', 1)
+
+            # Validate credentials
+            if (username == config.HTTP_AUTH_USERNAME and
+                password == config.HTTP_AUTH_PASSWORD):
+                return await handler(request)
+            else:
+                log.warning(f"Failed authentication attempt for username: {username}")
+                return web.Response(
+                    text='Invalid credentials',
+                    status=401,
+                    headers={'WWW-Authenticate': f'Basic realm="{config.HTTP_AUTH_REALM}"'}
+                )
+        except Exception as e:
+            log.error(f"Authentication error: {e}")
+            return web.Response(
+                text='Invalid authentication format',
+                status=401,
+                headers={'WWW-Authenticate': f'Basic realm="{config.HTTP_AUTH_REALM}"'}
+            )
+
+    return auth_middleware
+
+# Decorator for protecting specific routes
+def require_auth(f):
+    """Decorator to require HTTP Basic Authentication for specific routes"""
+    @wraps(f)
+    async def wrapper(request):
+        if not config.ENABLE_HTTP_AUTH:
+            return await f(request)
+
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Basic '):
+            return web.Response(
+                text='Authentication required',
+                status=401,
+                headers={'WWW-Authenticate': f'Basic realm="{config.HTTP_AUTH_REALM}"'}
+            )
+
+        try:
+            auth_decoded = base64.b64decode(auth_header[6:]).decode('utf-8')
+            username, password = auth_decoded.split(':', 1)
+
+            if (username == config.HTTP_AUTH_USERNAME and
+                password == config.HTTP_AUTH_PASSWORD):
+                return await f(request)
+            else:
+                log.warning(f"Failed authentication attempt for username: {username}")
+                return web.Response(
+                    text='Invalid credentials',
+                    status=401,
+                    headers={'WWW-Authenticate': f'Basic realm="{config.HTTP_AUTH_REALM}"'}
+                )
+        except Exception as e:
+            log.error(f"Authentication error: {e}")
+            return web.Response(
+                text='Invalid authentication format',
+                status=401,
+                headers={'WWW-Authenticate': f'Basic realm="{config.HTTP_AUTH_REALM}"'}
+            )
+
+    return wrapper
 
 class ObjectSerializer(json.JSONEncoder):
     def default(self, obj):
@@ -129,8 +225,44 @@ class ObjectSerializer(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 serializer = ObjectSerializer()
-app = web.Application()
-sio = socketio.AsyncServer(cors_allowed_origins='*')
+app = web.Application(middlewares=[basic_auth_middleware()])
+
+# WebSocket authentication middleware
+async def ws_auth_middleware(environ, handler):
+    """Authentication middleware for WebSocket connections"""
+    if not config.ENABLE_HTTP_AUTH:
+        return await handler(environ)
+
+    # Extract authorization from query parameters or headers
+    auth_header = environ.get('HTTP_AUTHORIZATION')
+    if not auth_header:
+        # Check query parameters as fallback
+        query_string = environ.get('QUERY_STRING', '')
+        auth_params = {}
+        if query_string:
+            auth_params = dict(param.split('=') for param in query_string.split('&') if '=' in param)
+
+        if 'authorization' in auth_params:
+            auth_header = auth_params['authorization']
+
+    if not auth_header or not auth_header.startswith('Basic '):
+        return None  # Reject connection
+
+    try:
+        auth_decoded = base64.b64decode(auth_header[6:]).decode('utf-8')
+        username, password = auth_decoded.split(':', 1)
+
+        if (username == config.HTTP_AUTH_USERNAME and
+            password == config.HTTP_AUTH_PASSWORD):
+            return await handler(environ)
+        else:
+            log.warning(f"WebSocket authentication failed for username: {username}")
+            return None
+    except Exception as e:
+        log.error(f"WebSocket authentication error: {e}")
+        return None
+
+sio = socketio.AsyncServer(cors_allowed_origins='*', engineio_logger=False)
 sio.attach(app, socketio_path=config.URL_PREFIX + 'socket.io')
 routes = web.RouteTableDef()
 

@@ -4,7 +4,7 @@
 /ui/out-tsc
 # Only exists if Bazel was run
 /ui/bazel-out
-
+*.log
 # dependencies
 /ui/node_modules
 
