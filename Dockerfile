@@ -2,7 +2,9 @@ FROM node:lts-alpine AS builder
 
 WORKDIR /metube
 COPY ui ./
-RUN npm ci && \
+# Configure npm registry and install dependencies
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm ci && \
     node_modules/.bin/ng build --configuration production
 
 
@@ -13,9 +15,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock docker-entrypoint.sh ./
 
 # Use sed to strip carriage-return characters from the entrypoint script (in case building on Windows)
-# Install dependencies
+# Configure Alpine mirror and install dependencies
 RUN sed -i 's/\r$//g' docker-entrypoint.sh && \
     chmod +x docker-entrypoint.sh && \
+    sed -i 's#https\?://dl-cdn.alpinelinux.org/alpine#https://mirrors.tuna.tsinghua.edu.cn/alpine#g' /etc/apk/repositories && \
     apk add --update ffmpeg aria2 coreutils shadow su-exec curl tini deno && \
     apk add --update --virtual .build-deps gcc g++ musl-dev uv && \
     UV_PROJECT_ENVIRONMENT=/usr/local uv sync --frozen --no-dev --compile-bytecode && \

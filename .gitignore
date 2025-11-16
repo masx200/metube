@@ -25,7 +25,7 @@ settings.local.json
 .vscode/*
 #!.vscode/settings.json
 !.vscode/tasks.json
-!.vscode/launch.json
+#!.vscode/launch.json
 !.vscode/extensions.json
 .history/*
 
@@ -51,3 +51,6 @@ pending*
 
 __pycache__
 .venv
+uv.lock
+.vscode/launch.json
+.vscode/launch.json
