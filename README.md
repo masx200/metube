@@ -1,16 +1,16 @@
 # MeTube
 
-![Build Status](https://github.com/alexta69/metube/actions/workflows/main.yml/badge.svg)
-![Docker Pulls](https://img.shields.io/docker/pulls/alexta69/metube.svg)
+![Build Status](https://github.com/masx200/metube/actions/workflows/main.yml/badge.svg)
+![Docker Pulls](https://img.shields.io/docker/pulls/masx200/metube.svg)
 
 Web GUI for youtube-dl (using the [yt-dlp](https://github.com/yt-dlp/yt-dlp) fork) with playlist support. Allows you to download videos from YouTube and [dozens of other sites](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md).
 
-![screenshot1](https://github.com/alexta69/metube/raw/master/screenshot.gif)
+![screenshot1](https://github.com/masx200/metube/raw/master/screenshot.gif)
 
 ## 🐳 Run using Docker
 
 ```bash
-docker run -d -p 8081:8081 -v /path/to/downloads:/downloads ghcr.io/alexta69/metube
+docker run -d -p 8081:8081 -v /path/to/downloads:/downloads ghcr.io/masx200/metube
 ```
 
 ## 🐳 Run using docker-compose
@@ -18,7 +18,7 @@ docker run -d -p 8081:8081 -v /path/to/downloads:/downloads ghcr.io/alexta69/met
 ```yaml
 services:
   metube:
-    image: ghcr.io/alexta69/metube
+    image: ghcr.io/masx200/metube
     container_name: metube
     restart: unless-stopped
     ports:
@@ -84,8 +84,8 @@ Certain values can be set via environment variables, using the `-e` parameter on
 * __ENABLE_ACCESSLOG__: Whether to enable access log. Defaults to `false`.
 
 The project's Wiki contains examples of useful configurations contributed by users of MeTube:
-* [YTDL_OPTIONS Cookbook](https://github.com/alexta69/metube/wiki/YTDL_OPTIONS-Cookbook)
-* [OUTPUT_TEMPLATE Cookbook](https://github.com/alexta69/metube/wiki/OUTPUT_TEMPLATE-Cookbook)
+* [YTDL_OPTIONS Cookbook](https://github.com/masx200/metube/wiki/YTDL_OPTIONS-Cookbook)
+* [OUTPUT_TEMPLATE Cookbook](https://github.com/masx200/metube/wiki/OUTPUT_TEMPLATE-Cookbook)
 
 ## 🍪 Using browser cookies
 
@@ -171,7 +171,7 @@ It's possible to configure MeTube to listen in HTTPS mode. `docker-compose` exam
 ```yaml
 services:
   metube:
-    image: ghcr.io/alexta69/metube
+    image: ghcr.io/masx200/metube
     container_name: metube
     restart: unless-stopped
     ports:

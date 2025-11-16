@@ -1,16 +1,16 @@
 # MeTube
 
-![构建状态](https://github.com/alexta69/metube/actions/workflows/main.yml/badge.svg)
-![Docker 拉取次数](https://img.shields.io/docker/pulls/alexta69/metube.svg)
+![构建状态](https://github.com/masx200/metube/actions/workflows/main.yml/badge.svg)
+![Docker 拉取次数](https://img.shields.io/docker/pulls/masx200/metube.svg)
 
 youtube-dl 的 Web 图形界面（使用 [yt-dlp](https://github.com/yt-dlp/yt-dlp) 分支），支持播放列表功能。允许您从 YouTube 和[几十个其他网站](https://github.com/yt-dlp/yt-dlp/blob/master/supportedsites.md)下载视频。
 
-![截图1](https://github.com/alexta69/metube/raw/master/screenshot.gif)
+![截图1](https://github.com/masx200/metube/raw/master/screenshot.gif)
 
 ## 🐳 使用 Docker 运行
 
 ```bash
-docker run -d -p 8081:8081 -v /path/to/downloads:/downloads ghcr.io/alexta69/metube
+docker run -d -p 8081:8081 -v /path/to/downloads:/downloads ghcr.io/masx200/metube
 ```
 
 ## 🐳 使用 docker-compose 运行
@@ -18,7 +18,7 @@ docker run -d -p 8081:8081 -v /path/to/downloads:/downloads ghcr.io/alexta69/met
 ```yaml
 services:
   metube:
-    image: ghcr.io/alexta69/metube
+    image: ghcr.io/masx200/metube
     container_name: metube
     restart: unless-stopped
     ports:
@@ -93,8 +93,8 @@ services:
 * **__ENABLE_ACCESSLOG__**: 是否启用访问日志。默认为 `false`。
 
 项目的 Wiki 包含了 MeTube 用户贡献的有用配置示例：
-* [YTDL_OPTIONS 食谱](https://github.com/alexta69/metube/wiki/YTDL_OPTIONS-Cookbook)
-* [OUTPUT_TEMPLATE 食谱](https://github.com/alexta69/metube/wiki/OUTPUT_TEMPLATE-Cookbook)
+* [YTDL_OPTIONS 食谱](https://github.com/masx200/metube/wiki/YTDL_OPTIONS-Cookbook)
+* [OUTPUT_TEMPLATE 食谱](https://github.com/masx200/metube/wiki/OUTPUT_TEMPLATE-Cookbook)
 
 ## 🍪 使用浏览器 Cookie
 
@@ -180,7 +180,7 @@ javascript:(function(){function notify(msg) {var sc = document.scrollingElement.
 ```yaml
 services:
   metube:
-    image: ghcr.io/alexta69/metube
+    image: ghcr.io/masx200/metube
     container_name: metube
     restart: unless-stopped
     ports:
